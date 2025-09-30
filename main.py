@@ -222,12 +222,11 @@ with tab1:
         vendas_por_ano_mes = df_periodo.groupby(["Ano", "Mes"])["Valor"].sum().reset_index()
 
         meses_selecionados = st.session_state.meses_selecionados
-
-        # ------------------------------
-        # Gráfico de vendas por mês ou por ano
-        # ------------------------------
         st.markdown("---")
 
+    # ------------------------------
+    # Gráfico de vendas por mês ou por ano
+    # ------------------------------
     cores = [
         "#BD4F4F", "#BA70A2", "#7C79B4", "#6B8E6C", 
         "#84ACA4", "#89779F", "#9B995D", "#796B79"
@@ -238,9 +237,10 @@ with tab1:
     if len(meses_selecionados) == 1:
         mes = meses_selecionados[0]
         vendas_mes = df_periodo[df_periodo["DataHora"].dt.month == mes]
-        vendas_por_ano = vendas_mes.groupby(vendas_mes["DataHora"].dt.year)["IDPedido"].count().reset_index()
-        ax.bar(vendas_por_ano["DataHora"].astype(str), vendas_por_ano["IDPedido"], 
-            color="#FF4B4B", edgecolor="black", width=0.5)
+        vendas_por_ano = vendas_mes.groupby(vendas_mes["DataHora"].dt.year)["IDPedido"].sum()  # soma ou count
+        anos = vendas_por_ano.index.astype(str)
+        valores = vendas_por_ano.values
+        ax.bar(anos, valores, color="#FF4B4B", edgecolor="black", width=0.5)
         st.markdown(
             f"<p style='text-align: center; font-size:18px;'>{'Vendas no ' + st.session_state.periodo_mensagem[1]}</p>",
             unsafe_allow_html=True
@@ -248,7 +248,6 @@ with tab1:
         ax.set_xlabel("Ano")
         ax.set_ylabel("Quantidade de Vendas (unidades)")
         ax.grid(axis="y", linestyle="--", alpha=0.7)
-    else:
         anos_unicos = sorted(df_periodo["DataHora"].dt.year.unique())
         for i, ano in enumerate(anos_unicos):
             vendas_ano = df_periodo[df_periodo["DataHora"].dt.year == ano]
@@ -423,16 +422,28 @@ def plot_horizontal_valor_total(df_periodo, coluna_item, dicionario_valores, tit
 # Usando a função para cada aba
 # ------------------------------
 with tab2:
-    plot_horizontal_valor_total(df_periodo, "Entradas", entradas, "Entradas", cor='#FF4C4C')
+    if df_periodo.empty:
+        st.warning("Nenhum dado disponível para o período selecionado.")
+    else:
+        plot_horizontal_valor_total(df_periodo, "Entradas", entradas, "Entradas", cor='#FF4C4C')
 
 with tab3:
-    plot_horizontal_valor_total(df_periodo, "Pratos", pratos, "Pratos", cor='#FF4C4C')
+    if df_periodo.empty:
+        st.warning("Nenhum dado disponível para o período selecionado.")
+    else:
+        plot_horizontal_valor_total(df_periodo, "Pratos", pratos, "Pratos", cor='#FF4C4C')
 
 with tab4:
-    plot_horizontal_valor_total(df_periodo, "Sobremesas", sobremesas, "Sobremesas", cor='#FF4C4C')
+    if df_periodo.empty:
+        st.warning("Nenhum dado disponível para o período selecionado.")
+    else:
+        plot_horizontal_valor_total(df_periodo, "Sobremesas", sobremesas, "Sobremesas", cor='#FF4C4C')
 
 with tab5:
-    plot_horizontal_valor_total(df_periodo, "Bebidas", bebidas, "Bebidas", cor='#FF4C4C')
+    if df_periodo.empty:
+        st.warning("Nenhum dado disponível para o período selecionado.")
+    else:
+        plot_horizontal_valor_total(df_periodo, "Bebidas", bebidas, "Bebidas", cor='#FF4C4C')
 
 # ------------------------------
 # Aba 6 - Vendas por Tempo
@@ -440,26 +451,25 @@ with tab5:
 with tab6:
     if df_periodo.empty:
         st.warning("Sem dados no período.")
+    else:
+        df_periodo_filtrado = df_periodo[
+            (df_periodo["DataHora"].dt.hour >= 18) & 
+            (df_periodo["DataHora"].dt.hour <= 23)
+        ]
 
-    df_periodo_filtrado = df_periodo[
-        (df_periodo["DataHora"].dt.hour >= 18) & 
-        (df_periodo["DataHora"].dt.hour <= 23)
-    ]
+        intervalos = pd.date_range("18:00", "23:00", freq="30min").strftime("%H:%M")
 
-    intervalos = pd.date_range("18:00", "23:00", freq="30min").strftime("%H:%M")
+        df_periodo_filtrado['Horario'] = df_periodo_filtrado["DataHora"].dt.floor('30min').dt.strftime("%H:%M")
+        vendas_por_horario = df_periodo_filtrado.groupby("Horario")["IDPedido"].count()
+        vendas_por_horario = vendas_por_horario.reindex(intervalos, fill_value=0)
 
-    df_periodo_filtrado['Horario'] = df_periodo_filtrado["DataHora"].dt.floor('30min').dt.strftime("%H:%M")
-    vendas_por_horario = df_periodo_filtrado.groupby("Horario")["IDPedido"].count()
-    vendas_por_horario = vendas_por_horario.reindex(intervalos, fill_value=0)
+        fig, ax = plt.subplots(figsize=(10, 4))
+        vendas_por_horario.plot(kind="line", color="#D26262", marker='o', ax=ax)
 
-    fig, ax = plt.subplots(figsize=(10, 4))
-    vendas_por_horario.plot(kind="line", color="#D26262", marker='o', ax=ax)
+        ax.set_title("Vendas por Horário", fontsize=16)
+        ax.set_xticks(range(len(intervalos)))
+        ax.set_xticklabels(intervalos, rotation=45)
+        ax.grid(axis="y", linestyle="--", alpha=0.7)
 
-    ax.set_title("Vendas por Horário", fontsize=16)
-    ax.set_xticks(range(len(intervalos)))
-    ax.set_xticklabels(intervalos, rotation=45)
-    ax.grid(axis="y", linestyle="--", alpha=0.7)
-
-    st.pyplot(fig)
-
+        st.pyplot(fig)
 
