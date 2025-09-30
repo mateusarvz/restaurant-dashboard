@@ -275,8 +275,24 @@ with tab1:
     # Gráfico de vendas por dia da semana
     # ------------------------------
 
-    df_periodo["DiaSemana"] = df_periodo["DataHora"].dt.day_name(locale='pt_BR')
+    dias_ingles_para_portugues = {
+    "Monday": "Segunda-feira",
+    "Tuesday": "Terça-feira",
+    "Wednesday": "Quarta-feira",
+    "Thursday": "Quinta-feira",
+    "Friday": "Sexta-feira",
+    "Saturday": "Sábado",
+    "Sunday": "Domingo"
+}
+
+    df_periodo["DiaSemana"] = df_periodo["DataHora"].dt.day_name()  # pega o nome em inglês
+    df_periodo["DiaSemana"] = df_periodo["DiaSemana"].map(dias_ingles_para_portugues)  # traduz para português
+    
     vendas_por_dia = df_periodo.groupby("DiaSemana")["IDPedido"].count()
+    ordem_dias = ["Segunda-feira", "Terça-feira", "Quarta-feira", "Quinta-feira",
+                  "Sexta-feira", "Sábado", "Domingo"]
+    vendas_por_dia = vendas_por_dia.reindex(ordem_dias, fill_value=0)
+
 
     ordem_dias = ["Segunda-feira", "Terça-feira", "Quarta-feira", "Quinta-feira",
                 "Sexta-feira", "Sábado", "Domingo"]
@@ -445,4 +461,5 @@ with tab6:
     ax.grid(axis="y", linestyle="--", alpha=0.7)
 
     st.pyplot(fig)
+
 
