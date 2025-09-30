@@ -7,98 +7,18 @@ import gspread
 from oauth2client.service_account import ServiceAccountCredentials
 from datetime import datetime
 import unicodedata
+from pathlib import Path
 
-entradas = {
-    "Tartar de Salmão": 35,
-    "Carpaccio de Wagyu": 50,
-    "Ceviche de Lagosta": 45,
-    "Foie Gras Grelhado": 60,
-    "Vieiras ao Molho Trufado": 55,
-    "Salada de Aspargos": 28,
-    "Bolinho de Siri": 30,
-    "Bruschetta de Burrata": 35,
-    "Sopa Cremosa de Lagosta": 40,
-    "Ostras Frescas": 50
-}
+def carregar_json(nome_arquivo):
+    path = Path("Dict_Valores") / nome_arquivo
+    with open(path, "r", encoding="utf-8") as f:
+        return json.load(f)
 
-pratos = {
-    "Filé Mignon ao Molho": 120,
-    "Ravioli de Lagosta": 110,
-    "Salmão Grelhado Especial": 95,
-    "Risoto de Trufas Negras": 130,
-    "Cordeiro Assado ao Alecrim": 140,
-    "Peito de Pato Confit": 125,
-    "Bacalhau à Portuguesa": 115,
-    "Linguado ao Molho Limão": 105,
-    "Frango Recheado com Brie": 90,
-    "Tagliatelle ao Molho Funghi": 100,
-    "Camarões ao Alho e Óleo": 95,
-    "Medalhão de Porco Especial": 110,
-    "Penne ao Molho Pesto": 85,
-    "Costela Assada Lentamente": 135,
-    "Polvo Grelhado com Ervas": 120,
-    "Peixe do Dia Grelhado": 100,
-    "Espaguete ao Molho Carbonara": 95,
-    "Curry de Camarão Especial": 105,
-    "Filé de Linguado Trufado": 125,
-    "Frutos do Mar ao Vapor": 130,
-    "Risoto de Camarão Rosa": 115,
-    "Tournedor de Filé Mignon": 140,
-    "Salmão ao Molho Mostarda": 100,
-    "Cordeiro ao Vinho Tinto": 135,
-    "Robalo ao Molho Champagne": 120,
-    "Lasanha de Berinjela Gourmet": 90,
-    "Bacalhau ao Molho Cremoso": 110,
-    "Peito de Frango Trufado": 95,
-    "Risoto de Cogumelos Frescos": 105,
-    "Espetinhos de Camarão Grelhado": 115
-}
+entradas = carregar_json("dict_entradas.json")
+pratos = carregar_json("dict_pratos.json")
+sobremesas = carregar_json("dict_sobremesas.json")
+bebidas = carregar_json("dict_bebidas.json")
 
-sobremesas = {
-    "Mousse de Chocolate Belga": 45,
-    "Tartelette de Frutas Vermelhas": 40,
-    "Panna Cotta de Baunilha": 38,
-    "Cheesecake de Framboesa": 42,
-    "Petit Gateau com Sorvete": 50,
-    "Creme Brulée Tradicional": 45,
-    "Sorvete Artesanal Variado": 35,
-    "Tiramisu Clássico Italiano": 48,
-    "Brownie de Chocolate Amargo": 40,
-    "Coulant de Chocolate Branco": 50,
-    "Pudim de Leite Cremoso": 38,
-    "Gelatina de Champanhe": 35,
-    "Panqueca de Maçã Caramelizada": 42,
-    "Profiteroles com Chocolate": 45,
-    "Macaron Sortido Francês": 48
-}
-
-bebidas = {
-    "Vinho Tinto Cabernet": 80,
-    "Vinho Branco Chardonnay": 75,
-    "Espumante Brut": 90,
-    "Champagne Dom Pérignon": 500,
-    "Cerveja Artesanal": 35,
-    "Suco de Laranja Natural": 20,
-    "Água Mineral Com Gás": 15,
-    "Água Mineral Sem Gás": 12,
-    "Coquetel Margarita": 50,
-    "Coquetel Mojito": 55,
-    "Café Expresso": 18,
-    "Café com Leite": 20,
-    "Capuccino Gourmet": 25,
-    "Chá de Camomila": 18,
-    "Chá Verde Premium": 22,
-    "Suco Detox Verde": 25,
-    "Smoothie de Frutas Vermelhas": 30,
-    "Suco de Abacaxi com Hortelã": 28,
-    "Whisky Single Malt": 120,
-    "Vodka Premium": 100,
-    "Gin Tônica Especial": 90,
-    "Rum Escuro": 85,
-    "Tequila Silver": 95,
-    "Licor de Café": 60,
-    "Licor de Amêndoas": 55
-}
 
 st.markdown(
     "<h1 style='text-align: center;'>Dashboar RestauranteTeste</h1>", 
@@ -109,7 +29,8 @@ st.markdown("---")
 # ------------------------------
 # Conexão com Google Sheets
 # ------------------------------
-scope = ["https://spreadsheets.google.com/feeds", "https://www.googleapis.com/auth/drive"]
+
+cope = ["https://spreadsheets.google.com/feeds", "https://www.googleapis.com/auth/drive"]
 
 cred_dict = json.loads(os.environ["GSHEET_CRED"])
 creds = ServiceAccountCredentials.from_json_keyfile_dict(cred_dict, scope)
@@ -118,6 +39,7 @@ client = gspread.authorize(creds)
 sheet = client.open("DF-Pedidos").sheet1
 dados = sheet.get_all_records()
 df = pd.DataFrame(dados)
+
 def limpar_datahora(valor):
     if pd.isna(valor):
         return None
@@ -524,5 +446,3 @@ with tab6:
     ax.grid(axis="y", linestyle="--", alpha=0.7)
 
     st.pyplot(fig)
-
-
