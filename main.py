@@ -108,8 +108,11 @@ st.markdown("---")
 # Conexão com Google Sheets
 # ------------------------------
 scope = ["https://spreadsheets.google.com/feeds", "https://www.googleapis.com/auth/drive"]
-creds = ServiceAccountCredentials.from_json_keyfile_name("credenciais.json", scope)
+
+cred_dict = json.loads(os.environ["GSHEET_CRED"])
+creds = ServiceAccountCredentials.from_json_keyfile_dict(cred_dict, scope)
 client = gspread.authorize(creds)
+
 sheet = client.open("DF-Pedidos").sheet1
 dados = sheet.get_all_records()
 df = pd.DataFrame(dados)
@@ -519,3 +522,4 @@ with tab6:
     ax.grid(axis="y", linestyle="--", alpha=0.7)
 
     st.pyplot(fig)
+
