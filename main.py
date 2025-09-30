@@ -29,13 +29,21 @@ st.markdown("---")
 # ------------------------------
 # Conexão com Google Sheets
 # ------------------------------
-cred_dict = json.loads(st.secrets["GSHEET_CRED"])
 
+cred_dict = json.loads(st.secrets["GSHEET_CRED"])
 scope = ["https://spreadsheets.google.com/feeds", "https://www.googleapis.com/auth/drive"]
 creds = ServiceAccountCredentials.from_json_keyfile_dict(cred_dict, scope)
 client = gspread.authorize(creds)
-sheet = client.open("DF-Pedidos").sheet1
 
+
+
+#arquivo_credenciais = "credenciais.json"
+#scope = ["https://spreadsheets.google.com/feeds", "https://www.googleapis.com/auth/drive"]
+#creds = ServiceAccountCredentials.from_json_keyfile_name(arquivo_credenciais, scope)
+#client = gspread.authorize(creds)
+
+
+sheet = client.open("DF-Pedidos").sheet1
 dados = sheet.get_all_records()
 df = pd.DataFrame(dados)
 
@@ -137,21 +145,23 @@ with st.sidebar:
     # ------------------------------
     # Botão único para aplicar tudo
     # ------------------------------
-    if st.button("Aplicar seleção"):
-        st.session_state.anos_selecionados = anos_selecionados
-        st.session_state.meses_selecionados = meses_selecionados
+    col1, col2, col3 = st.columns([1, 2, 1])  # a coluna do meio é maior, assim o botão fica centralizado
+    with col2:
+        if st.button("Aplicar seleção"):
+            st.session_state.anos_selecionados = anos_selecionados
+            st.session_state.meses_selecionados = meses_selecionados
 
-        if len(anos_selecionados) == 1:
-            ano_msg = f"Ano: <b>{anos_selecionados[0]}</b>"
-        else:
-            ano_msg = f"Anos: <b>{anos_selecionados[0]} a {anos_selecionados[-1]}</b>"
+            if len(anos_selecionados) == 1:
+                ano_msg = f"Ano: <b>{anos_selecionados[0]}</b>"
+            else:
+                ano_msg = f"Anos: <b>{anos_selecionados[0]} a {anos_selecionados[-1]}</b>"
 
-        if len(meses_selecionados) == 1:
-            mes_msg = f"Mês: <b>{meses[meses_selecionados[0]]}</b>"
-        else:
-            mes_msg = f"Meses: <b>{meses[meses_selecionados[0]]} a {meses[meses_selecionados[-1]]}</b>"
+            if len(meses_selecionados) == 1:
+                mes_msg = f"Mês: <b>{meses[meses_selecionados[0]]}</b>"
+            else:
+                mes_msg = f"Meses: <b>{meses[meses_selecionados[0]]} a {meses[meses_selecionados[-1]]}</b>"
 
-        st.session_state.periodo_mensagem = (ano_msg, mes_msg)
+            st.session_state.periodo_mensagem = (ano_msg, mes_msg)
 
     if st.session_state.periodo_mensagem:
         st.markdown("---")
@@ -237,17 +247,19 @@ with tab1:
     if len(meses_selecionados) == 1:
         mes = meses_selecionados[0]
         vendas_mes = df_periodo[df_periodo["DataHora"].dt.month == mes]
-        vendas_por_ano = vendas_mes.groupby(vendas_mes["DataHora"].dt.year)["IDPedido"].sum()  # soma ou count
-        anos = vendas_por_ano.index.astype(str)
-        valores = vendas_por_ano.values
-        ax.bar(anos, valores, color="#FF4B4B", edgecolor="black", width=0.5)
+        vendas_por_ano = vendas_mes.groupby(vendas_mes["DataHora"].dt.year)["IDPedido"].count().reset_index()
+        vendas_por_ano.rename(columns={"DataHora": "Ano", "IDPedido": "Quantidade"}, inplace=True)
+
+        ax.bar(vendas_por_ano["Ano"].astype(str), vendas_por_ano["Quantidade"], 
+            color="#EA6464", edgecolor="black", width=0.5)
         st.markdown(
             f"<p style='text-align: center; font-size:18px;'>{'Vendas no ' + st.session_state.periodo_mensagem[1]}</p>",
             unsafe_allow_html=True
         )
-        ax.set_xlabel("Ano")
-        ax.set_ylabel("Quantidade de Vendas (unidades)")
         ax.grid(axis="y", linestyle="--", alpha=0.7)
+        st.pyplot(fig)
+
+    else:
         anos_unicos = sorted(df_periodo["DataHora"].dt.year.unique())
         for i, ano in enumerate(anos_unicos):
             vendas_ano = df_periodo[df_periodo["DataHora"].dt.year == ano]
@@ -261,13 +273,10 @@ with tab1:
                 ax.plot(vendas_mensais.index, vendas_mensais.values, marker="o", label=str(ano), color=cor, linewidth=2)
 
         ax.set_title("Vendas Mensais por Ano", fontsize=16)
-        ax.set_xlabel("Mês")
-        ax.set_ylabel("Quantidade de Vendas (unidades)")
         ax.set_xticks(range(1, 13))
         ax.set_xticklabels(["Jan", "Fev", "Mar", "Abr", "Mai", "Jun", "Jul", "Ago", "Set", "Out", "Nov", "Dez"])
-        ax.legend(title="Ano")
         ax.grid(axis="y", linestyle="--", alpha=0.7)
-
+        ax.legend(title="Ano")
         st.pyplot(fig)
 
     # ------------------------------
@@ -302,9 +311,7 @@ with tab1:
 
     ax.set_title("Vendas por Dia da Semana", fontsize=16)
     ax.set_xlabel("")
-    ax.set_ylabel("Quantidade de Vendas (unidades)")
     ax.grid(axis="y", linestyle="--", alpha=0.7)
-
     st.pyplot(fig)
 
 
