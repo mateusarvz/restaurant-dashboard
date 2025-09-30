@@ -237,82 +237,82 @@ with tab1:
     # ------------------------------
     # Gráfico de vendas por mês ou por ano
     # ------------------------------
-    cores = [
-        "#BD4F4F", "#BA70A2", "#7C79B4", "#6B8E6C", 
-        "#84ACA4", "#89779F", "#9B995D", "#796B79"
-    ]
+        cores = [
+            "#BD4F4F", "#BA70A2", "#7C79B4", "#6B8E6C", 
+            "#84ACA4", "#89779F", "#9B995D", "#796B79"
+        ]
 
-    fig, ax = plt.subplots(figsize=(10,5))
+        fig, ax = plt.subplots(figsize=(10,5))
 
-    if len(meses_selecionados) == 1:
-        mes = meses_selecionados[0]
-        vendas_mes = df_periodo[df_periodo["DataHora"].dt.month == mes]
-        vendas_por_ano = vendas_mes.groupby(vendas_mes["DataHora"].dt.year)["IDPedido"].count().reset_index()
-        vendas_por_ano.rename(columns={"DataHora": "Ano", "IDPedido": "Quantidade"}, inplace=True)
+        if len(meses_selecionados) == 1:
+            mes = meses_selecionados[0]
+            vendas_mes = df_periodo[df_periodo["DataHora"].dt.month == mes]
+            vendas_por_ano = vendas_mes.groupby(vendas_mes["DataHora"].dt.year)["IDPedido"].count().reset_index()
+            vendas_por_ano.rename(columns={"DataHora": "Ano", "IDPedido": "Quantidade"}, inplace=True)
 
-        ax.bar(vendas_por_ano["Ano"].astype(str), vendas_por_ano["Quantidade"], 
-            color="#EA6464", edgecolor="black", width=0.5)
-        st.markdown(
-            f"<p style='text-align: center; font-size:18px;'>{'Vendas no ' + st.session_state.periodo_mensagem[1]}</p>",
-            unsafe_allow_html=True
-        )
+            ax.bar(vendas_por_ano["Ano"].astype(str), vendas_por_ano["Quantidade"], 
+                color="#EA6464", edgecolor="black", width=0.5)
+            st.markdown(
+                f"<p style='text-align: center; font-size:18px;'>{'Vendas no ' + st.session_state.periodo_mensagem[1]}</p>",
+                unsafe_allow_html=True
+            )
+            ax.grid(axis="y", linestyle="--", alpha=0.7)
+            st.pyplot(fig)
+
+        else:
+            anos_unicos = sorted(df_periodo["DataHora"].dt.year.unique())
+            for i, ano in enumerate(anos_unicos):
+                vendas_ano = df_periodo[df_periodo["DataHora"].dt.year == ano]
+                vendas_mensais = vendas_ano.groupby(vendas_ano["DataHora"].dt.month)["IDPedido"].count()
+                
+                # Manter apenas até o último mês com venda
+                meses_com_venda = vendas_mensais.index[vendas_mensais > 0]
+                if len(meses_com_venda) > 0:
+                    vendas_mensais = vendas_mensais.loc[:meses_com_venda[-1]]
+                    cor = cores[i % len(cores)]
+                    ax.plot(vendas_mensais.index, vendas_mensais.values, marker="o", label=str(ano), color=cor, linewidth=2)
+
+            ax.set_title("Vendas Mensais por Ano", fontsize=16)
+            ax.set_xticks(range(1, 13))
+            ax.set_xticklabels(["Jan", "Fev", "Mar", "Abr", "Mai", "Jun", "Jul", "Ago", "Set", "Out", "Nov", "Dez"])
+            ax.grid(axis="y", linestyle="--", alpha=0.7)
+            ax.legend(title="Ano")
+            st.pyplot(fig)
+
+        # ------------------------------
+        # Gráfico de vendas por dia da semana
+        # ------------------------------
+
+        dias_ingles_para_portugues = {
+        "Monday": "Segunda-feira",
+        "Tuesday": "Terça-feira",
+        "Wednesday": "Quarta-feira",
+        "Thursday": "Quinta-feira",
+        "Friday": "Sexta-feira",
+        "Saturday": "Sábado",
+        "Sunday": "Domingo"
+    }
+
+        df_periodo["DiaSemana"] = df_periodo["DataHora"].dt.day_name()  # pega o nome em inglês
+        df_periodo["DiaSemana"] = df_periodo["DiaSemana"].map(dias_ingles_para_portugues)  # traduz para português
+        
+        vendas_por_dia = df_periodo.groupby("DiaSemana")["IDPedido"].count()
+        ordem_dias = ["Segunda-feira", "Terça-feira", "Quarta-feira", "Quinta-feira",
+                    "Sexta-feira", "Sábado", "Domingo"]
+        vendas_por_dia = vendas_por_dia.reindex(ordem_dias, fill_value=0)
+
+
+        ordem_dias = ["Segunda-feira", "Terça-feira", "Quarta-feira", "Quinta-feira",
+                    "Sexta-feira", "Sábado", "Domingo"]
+        vendas_por_dia = vendas_por_dia.reindex(ordem_dias, fill_value=0)
+
+        fig, ax = plt.subplots(figsize=(10, 5))
+        vendas_por_dia.plot(kind="bar", color="#EE6666", edgecolor="black", ax=ax)
+
+        ax.set_title("Vendas por Dia da Semana", fontsize=16)
+        ax.set_xlabel("")
         ax.grid(axis="y", linestyle="--", alpha=0.7)
         st.pyplot(fig)
-
-    else:
-        anos_unicos = sorted(df_periodo["DataHora"].dt.year.unique())
-        for i, ano in enumerate(anos_unicos):
-            vendas_ano = df_periodo[df_periodo["DataHora"].dt.year == ano]
-            vendas_mensais = vendas_ano.groupby(vendas_ano["DataHora"].dt.month)["IDPedido"].count()
-            
-            # Manter apenas até o último mês com venda
-            meses_com_venda = vendas_mensais.index[vendas_mensais > 0]
-            if len(meses_com_venda) > 0:
-                vendas_mensais = vendas_mensais.loc[:meses_com_venda[-1]]
-                cor = cores[i % len(cores)]
-                ax.plot(vendas_mensais.index, vendas_mensais.values, marker="o", label=str(ano), color=cor, linewidth=2)
-
-        ax.set_title("Vendas Mensais por Ano", fontsize=16)
-        ax.set_xticks(range(1, 13))
-        ax.set_xticklabels(["Jan", "Fev", "Mar", "Abr", "Mai", "Jun", "Jul", "Ago", "Set", "Out", "Nov", "Dez"])
-        ax.grid(axis="y", linestyle="--", alpha=0.7)
-        ax.legend(title="Ano")
-        st.pyplot(fig)
-
-    # ------------------------------
-    # Gráfico de vendas por dia da semana
-    # ------------------------------
-
-    dias_ingles_para_portugues = {
-    "Monday": "Segunda-feira",
-    "Tuesday": "Terça-feira",
-    "Wednesday": "Quarta-feira",
-    "Thursday": "Quinta-feira",
-    "Friday": "Sexta-feira",
-    "Saturday": "Sábado",
-    "Sunday": "Domingo"
-}
-
-    df_periodo["DiaSemana"] = df_periodo["DataHora"].dt.day_name()  # pega o nome em inglês
-    df_periodo["DiaSemana"] = df_periodo["DiaSemana"].map(dias_ingles_para_portugues)  # traduz para português
-    
-    vendas_por_dia = df_periodo.groupby("DiaSemana")["IDPedido"].count()
-    ordem_dias = ["Segunda-feira", "Terça-feira", "Quarta-feira", "Quinta-feira",
-                  "Sexta-feira", "Sábado", "Domingo"]
-    vendas_por_dia = vendas_por_dia.reindex(ordem_dias, fill_value=0)
-
-
-    ordem_dias = ["Segunda-feira", "Terça-feira", "Quarta-feira", "Quinta-feira",
-                "Sexta-feira", "Sábado", "Domingo"]
-    vendas_por_dia = vendas_por_dia.reindex(ordem_dias, fill_value=0)
-
-    fig, ax = plt.subplots(figsize=(10, 5))
-    vendas_por_dia.plot(kind="bar", color="#EE6666", edgecolor="black", ax=ax)
-
-    ax.set_title("Vendas por Dia da Semana", fontsize=16)
-    ax.set_xlabel("")
-    ax.grid(axis="y", linestyle="--", alpha=0.7)
-    st.pyplot(fig)
 
 
 # ------------------------------
@@ -457,7 +457,7 @@ with tab5:
 # ------------------------------
 with tab6:
     if df_periodo.empty:
-        st.warning("Sem dados no período.")
+        st.warning("Nenhum dado disponível para o período selecionado.")
     else:
         df_periodo_filtrado = df_periodo[
             (df_periodo["DataHora"].dt.hour >= 18) & 
